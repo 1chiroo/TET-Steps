@@ -1,0 +1,531 @@
+Clear-Host
+
+trap {
+    Write-Host "`n[CRASH] $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Line: $($_.InvocationInfo.ScriptLineNumber)" -ForegroundColor Red
+    pause
+    exit 1
+}
+
+try {
+    if ($PROFILE -and (Test-Path $PROFILE)) {
+        Write-Host "[INFO] PowerShell profile detected: $PROFILE" -ForegroundColor Yellow
+        Write-Host "[INFO] Relaunching with -NoProfile..." -ForegroundColor Yellow
+        Start-Sleep -Seconds 1
+        $sp = (Resolve-Path -Path $MyInvocation.MyCommand.Definition -ErrorAction Stop).Path
+        Start-Process powershell.exe -ArgumentList "-NoProfile","-ExecutionPolicy","Bypass","-File","`"$sp`"" -Verb RunAs
+        exit
+    } else {
+        Write-Host "[INFO] No PowerShell profile detected. Continuing..." -ForegroundColor Green
+    }
+} catch {
+    Write-Host "[INFO] Could not check profile, continuing..." -ForegroundColor Yellow
+}
+
+$IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+if (-not $IsAdmin) {
+    Write-Host "[WARNING] Not running as admin. Please re-run this script as Administrator." -ForegroundColor Red
+    Write-Host "[INFO] Right-click PowerShell and select 'Run as Administrator'." -ForegroundColor Yellow
+    Write-Host ""
+    pause
+    exit
+}
+
+$ESC = [char]27
+
+function Wait-ForEnter {
+    Start-Sleep -Seconds 1
+    Write-Host ""
+    Write-Host "  $ESC[38;2;100;100;100mPress any key to exit...$ESC[0m" -NoNewline
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    Write-Host ""
+}
+
+function Show-LoadingBar {
+    param ([string]$Label = "Loading")
+    for ($i = 0; $i -le 20; $i++) {
+        $pct = [math]::Round($i * 5)
+        $filled = "$ESC[38;2;0;200;80m$("█" * $i)$ESC[0m"
+        $empty = "$ESC[38;2;60;60;60m$("░" * (20 - $i))$ESC[0m"
+        Write-Host -NoNewline "`r  $ESC[38;2;150;150;150m$Label $ESC[38;2;0;200;80m[$filled$empty$ESC[38;2;0;200;80m] $ESC[38;2;255;255;255m$pct%$ESC[0m  "
+        Start-Sleep -Milliseconds 80
+    }
+    Write-Host ""
+}
+
+function Write-Section {
+    param([string]$Title, [string[]]$Lines)
+    Write-Host ""
+    Write-Host "  $ESC[38;2;0;180;220m╔══════════════════════════════════════════════════╗$ESC[0m"
+    Write-Host "  $ESC[38;2;0;180;220m║  $ESC[38;2;255;255;255m$Title$ESC[0m"
+    Write-Host "  $ESC[38;2;0;180;220m╠══════════════════════════════════════════════════╣$ESC[0m"
+    if ($Lines.Count -eq 0) {
+        Write-Host "  $ESC[38;2;0;180;220m║  $ESC[38;2;100;100;100m(no results)$ESC[0m"
+        Write-Host "  $ESC[38;2;0;180;220m╚══════════════════════════════════════════════════╝$ESC[0m"
+        return
+    }
+    foreach ($line in $Lines) {
+        if ($line -match "^SUCCESS")     { Write-Host "  $ESC[38;2;0;180;220m║  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180m$($line -replace '^SUCCESS: ','')$ESC[0m" }
+        elseif ($line -match "^FAILURE") { Write-Host "  $ESC[38;2;0;180;220m║  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;100;100m$($line -replace '^FAILURE: ','')$ESC[0m" }
+        elseif ($line -match "^WARNING") { Write-Host "  $ESC[38;2;0;180;220m║  $ESC[38;2;255;200;0m⚠$ESC[0m $ESC[38;2;255;200;100m$($line -replace '^WARNING: ','')$ESC[0m" }
+        else                             { Write-Host "  $ESC[38;2;0;180;220m║  $ESC[38;2;180;180;180m$line$ESC[0m" }
+    }
+    Write-Host "  $ESC[38;2;0;180;220m╚══════════════════════════════════════════════════╝$ESC[0m"
+}
+
+function Write-Step {
+    param([string]$t)
+    Write-Host ""
+    Write-Host "  $ESC[38;2;180;80;255m══>$ESC[0m $ESC[38;2;255;255;255m$t$ESC[0m"
+}
+
+Clear-Host
+
+[Console]::WriteLine(" $ESC[0;37;40m $ESC[0;31;40m▄▄▀▀▀████$ESC[91;1;41m░░▒▓$ESC[91;1;40m▄$ESC[0;37;40m     $ESC[0;31;40m▄▄▄▄▄▄▄$ESC[0;37;40m         $ESC[0;31;40m▄▄▀▀▀████$ESC[91;1;41m░░▒▓$ESC[91;1;40m▄$ESC[0;37;40m $ESC[0m")
+[Console]::WriteLine(" $ESC[0;31;40m▀$ESC[0;37;40m       $ESC[0;97;1;40m▄$ESC[0;37;40m $ESC[0;31;40m███$ESC[91;1;41m▒▓$ESC[91;1;40m▌$ESC[0;37;40m   $ESC[0;31;40m▄█▀▀▀█$ESC[91;1;41m░░▒▓▓$ESC[91;1;40m▄$ESC[0;37;40m     $ESC[0;31;40m▀$ESC[0;37;40m       $ESC[0;97;1;40m▄$ESC[0;37;40m $ESC[0;31;40m███$ESC[91;1;41m▒▓$ESC[91;1;40m▌$ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m       $ESC[0;97;1;40m▐$ESC[0;97;1;47m▒▓$ESC[0;37;40m $ESC[0;31;40m▀██$ESC[91;1;41m▒▓$ESC[0;37;40m $ESC[0;31;40m▀▄$ESC[0;37;40m  $ESC[0;97;1;40m▄$ESC[0;37;40m   $ESC[0;31;40m▀$ESC[0;31;41m $ESC[91;1;41m░▒▓▓$ESC[91;1;40m▄$ESC[0;37;40m          $ESC[0;97;1;40m▐$ESC[0;97;1;47m▒▓$ESC[0;37;40m $ESC[0;31;40m▀██$ESC[91;1;41m▒▓$ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m       ▐$ESC[0;97;1;47m░░$ESC[0;37;40m   $ESC[91;1;41m░ $ESC[0;37;40m     $ESC[0;97;1;40m▐$ESC[0;97;1;47m▒▓$ESC[0;37;40m    $ESC[0;31;40m▀█$ESC[91;1;41m░▒▓$ESC[91;1;40m▌$ESC[0;37;40m         ▐$ESC[0;97;1;47m░░$ESC[0;37;40m   $ESC[91;1;41m░ $ESC[0;37;40m $ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m       ▐$ESC[0;90;1;47m░░$ESC[0;37;40m  $ESC[0;31;40m▀$ESC[0;37;40m       ▐$ESC[0;97;1;47m░░$ESC[0;37;40m  $ESC[91;1;40m▄$ESC[0;37;40m   $ESC[0;31;40m▀█$ESC[91;1;41m░░$ESC[0;37;40m         ▐$ESC[0;90;1;47m░░$ESC[0;37;40m  $ESC[0;31;40m▀$ESC[0;37;40m   $ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m        $ESC[0;90;1;47m▒$ESC[0;37;40m▌          ▐$ESC[0;90;1;47m░░$ESC[0;37;40m $ESC[0;31;40m▐$ESC[91;1;41m▒$ESC[91;1;40m▌$ESC[0;37;40m   $ESC[0;31;40m▐█$ESC[91;1;41m░$ESC[91;1;40m▌$ESC[0;37;40m         $ESC[0;90;1;47m▒$ESC[0;37;40m▌      $ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m        $ESC[0;90;1;47m▓$ESC[0;37;40m▌           $ESC[0;90;1;47m▒$ESC[0;37;40m▌  $ESC[0;31;40m▀$ESC[0;37;40m     $ESC[0;31;41m $ESC[0;31;40m█$ESC[0;37;40m          $ESC[0;90;1;47m▓$ESC[0;37;40m▌      $ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m        $ESC[0;90;1;40m█$ESC[0;37;40m            $ESC[0;90;1;47m▓$ESC[0;37;40m▌        $ESC[0;31;40m▐▌$ESC[0;37;40m          $ESC[0;90;1;40m█$ESC[0;37;40m       $ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m        $ESC[0;90;1;40m▐$ESC[0;37;40m            $ESC[0;90;1;40m█$ESC[0;37;40m         $ESC[0;31;40m█$ESC[0;37;40m           $ESC[0;90;1;40m▐$ESC[0;37;40m       $ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m                     $ESC[0;90;1;40m▐$ESC[0;37;40m        $ESC[0;31;40m▄▀$ESC[0;37;40m                   $ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m                             $ESC[0;31;40m▀$ESC[0;37;40m                     $ESC[0m")
+Write-Host ""
+Write-Host "  $ESC[38;2;100;100;100mMade by$ESC[0m $ESC[38;2;200;200;200mIchiro$ESC[0m $ESC[38;2;0;180;220m.aw_$ESC[0m"
+
+$ia = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $ia) {
+    Write-Host ""
+    Write-Host "  $ESC[38;2;255;60;60m╔════════════════════════════════════════════════════════════╗$ESC[0m"
+    Write-Host "  $ESC[38;2;255;60;60m║$ESC[0m  $ESC[38;2;255;80;80mNOT running as Administrator!$ESC[0m"
+    Write-Host "  $ESC[38;2;255;60;60m║$ESC[0m  $ESC[38;2;180;180;180mRight-click PowerShell -> Run as Administrator$ESC[0m"
+    Write-Host "  $ESC[38;2;255;60;60m╚════════════════════════════════════════════════════════════╝$ESC[0m"
+    Write-Host ""
+    Pause
+    exit 1
+}
+
+$now = Get-Date -Format "yyyy-MM-dd hh:mm:ss tt"
+Write-Host ""
+Write-Host "  $ESC[38;2;0;200;255m╔════════════════════════════════════════════════════════════╗$ESC[0m"
+Write-Host "  $ESC[38;2;0;200;255m║$ESC[0m  $ESC[38;2;255;255;255mSession Started:$ESC[0m  $ESC[38;2;0;255;150m$now$ESC[0m"
+Write-Host "  $ESC[38;2;0;200;255m╚════════════════════════════════════════════════════════════╝$ESC[0m"
+Write-Host ""
+
+Write-Host ""
+Write-Host "  $ESC[38;2;255;200;0m╔════════════════════════════════════════════════════════════╗$ESC[0m"
+Write-Host "  $ESC[38;2;255;200;0m║$ESC[0m  $ESC[38;2;255;255;255mStep 1 of 2:$ESC[0m  $ESC[38;2;255;220;50mSystem Check$ESC[0m"
+Write-Host "  $ESC[38;2;255;200;0m║$ESC[0m  $ESC[38;2;180;180;180mINSTRUCTION: Reach 100% success$ESC[0m"
+Write-Host "  $ESC[38;2;255;200;0m╚════════════════════════════════════════════════════════════╝$ESC[0m"
+Write-Host ""
+Show-LoadingBar "Initializing"
+
+$r = @{
+    Modules = @(); OS = @(); MemInt = @(); Defender = @()
+    Exclusions = @(); Threats = @(); PSSig = @(); Registry = @(); Ports = @()
+}
+
+Write-Step "Checking PowerShell modules..."
+$okMods = @("Microsoft.PowerShell.Archive","Microsoft.PowerShell.Diagnostics","Microsoft.PowerShell.Host","Microsoft.PowerShell.LocalAccounts","Microsoft.PowerShell.Management","Microsoft.PowerShell.Security","Microsoft.PowerShell.Utility","PackageManagement","PowerShellGet","PSReadLine","Pester","ThreadJob")
+$protMod = "Microsoft.PowerShell.Operation.Validation"
+$modPath = "C:\Program Files\WindowsPowerShell\Modules"
+$protFile = "$modPath\$protMod\1.0.1\Diagnostics\Comprehensive\Comprehensive.Tests.ps1"
+$protHash = "99B7CBE4325BA089DD9440A202B9E35D9E6F134A46312F3F1E93E71F23C8DAE3"
+
+try {
+    $mods = @(Get-ChildItem $modPath -Directory -EA SilentlyContinue)
+    Write-Host "  $ESC[38;2;120;120;120mFound $($mods.Count) module(s)$ESC[0m"
+
+    foreach ($m in $mods) {
+        $nm = $m.Name
+        $isDef = $okMods -contains $nm
+        $isProt = $nm -eq $protMod
+
+        $files = @(Get-ChildItem $m.FullName -Recurse -File -Force -EA SilentlyContinue)
+        $sus = @()
+        foreach ($f in $files) {
+            $sg = Get-AuthenticodeSignature $f.FullName -EA SilentlyContinue
+            if ($sg.Status -ne 'Valid' -or $sg.SignerCertificate.Subject -notmatch "Microsoft") {
+                $sus += $f
+            }
+        }
+
+        if (-not $isDef -and -not $isProt) {
+            try {
+                Remove-Item $m.FullName -Recurse -Force -EA Stop
+                $r.Modules += "FAILURE: Removed unauthorized module: $nm"
+                Write-Host "  $ESC[38;2;255;60;60m✗ Removed:$ESC[0m $ESC[38;2;255;120;120m$nm$ESC[0m"
+            } catch {
+                $r.Modules += "WARNING: Could not remove '$nm'"
+                Write-Host "  $ESC[38;2;255;200;0m⚠$ESC[0m $ESC[38;2;255;220;100mCould not remove: $nm$ESC[0m"
+            }
+        } elseif ($isProt) {
+            if ($sus.Count -gt 0) {
+                foreach ($f in $sus) {
+                    if ($f.FullName -ieq $protFile) {
+                        try {
+                            $b = [System.IO.File]::ReadAllBytes($f.FullName)
+                            $h = [System.Security.Cryptography.SHA256]::Create()
+                            $hash = ([BitConverter]::ToString($h.ComputeHash($b))).Replace("-","")
+                            if ($hash -ne $protHash) {
+                                $r.Modules += "WARNING: Protected file altered: $($f.FullName)"
+                            }
+                        } catch {}
+                    }
+                }
+            }
+            $r.Modules += "SUCCESS: Protected module '$nm' intact."
+            Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180m$nm$ESC[0m $ESC[38;2;100;100;100m(protected)$ESC[0m"
+        } else {
+            foreach ($f in $sus) {
+                try {
+                    Remove-Item $f.FullName -Force -EA Stop
+                    $r.Modules += "FAILURE: Removed unsigned file: $($f.FullName)"
+                    Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120m$($f.Name)$ESC[0m"
+                } catch {
+                    $r.Modules += "WARNING: Could not remove '$($f.FullName)'"
+                }
+            }
+            if ($sus.Count -eq 0) {
+                $r.Modules += "SUCCESS: Module '$nm' passed."
+                Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180m$nm$ESC[0m"
+            }
+        }
+    }
+
+    $rf = @(Get-ChildItem $modPath -File -Force -EA SilentlyContinue)
+    foreach ($f in $rf) {
+        $sg = Get-AuthenticodeSignature $f.FullName -EA SilentlyContinue
+        if ($sg.Status -ne 'Valid' -or $sg.SignerCertificate.Subject -notmatch "Microsoft") {
+            try {
+                Remove-Item $f.FullName -Force -EA Stop
+                $r.Modules += "FAILURE: Removed unsigned root file: $($f.Name)"
+                Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120m$($f.Name)$ESC[0m"
+            } catch {
+                $r.Modules += "WARNING: Could not remove '$($f.Name)'"
+            }
+        } else {
+            $r.Modules += "SUCCESS: Root file '$($f.Name)' signed."
+        }
+    }
+
+    if ($r.Modules.Count -eq 0) { $r.Modules += "SUCCESS: No unauthorized modules found." }
+} catch {
+    $r.Modules += "WARNING: Module check error: $($_.Exception.Message)"
+    Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120m$($_.Exception.Message)$ESC[0m"
+}
+
+Write-Step "Checking operating system..."
+try {
+    $os = Get-CimInstance Win32_OperatingSystem -EA Stop
+    if ($env:OS -eq "Windows_NT") {
+        $r.OS += "SUCCESS: Running on Windows $($os.Caption)."
+        Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mWindows detected$ESC[0m"
+    } else {
+        $r.OS += "FAILURE: Not running on Windows."
+        Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120mNot Windows$ESC[0m"
+    }
+} catch {
+    $r.OS += "FAILURE: OS check failed."
+    Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120mOS check failed$ESC[0m"
+}
+
+Write-Step "Checking Memory Integrity..."
+try {
+    $rp = "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity"
+    $en = Get-ItemPropertyValue -Path $rp -Name "Enabled" -EA Stop
+    $r.MemInt += "SUCCESS: Memory Integrity supported."
+    if ($en -eq 1) {
+        $r.MemInt += "SUCCESS: Memory Integrity is ON."
+        Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mMemory Integrity is ON$ESC[0m"
+    } else {
+        $r.MemInt += "FAILURE: Memory Integrity is OFF."
+        Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120mMemory Integrity is OFF$ESC[0m"
+    }
+} catch {
+    $r.MemInt += "FAILURE: Memory Integrity not accessible."
+    Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120mNot accessible$ESC[0m"
+}
+
+Write-Step "Checking Windows Defender..."
+try {
+    $df = Get-MpComputerStatus -EA Stop
+    $sv = Get-Service -Name WinDefend -EA SilentlyContinue
+
+    if ($df.AntivirusEnabled -and $sv -and $sv.Status -eq 'Running') {
+        if (-not $df.RealTimeProtectionEnabled) {
+            try {
+                Set-MpPreference -DisableRealtimeMonitoring $false -EA Stop
+                $r.Defender += "FAILURE: Realtime was OFF. Re-enabling..."
+                Write-Host "  $ESC[38;2;255;200;0m⚠$ESC[0m $ESC[38;2;255;220;100mRealtime OFF - re-enabling$ESC[0m"
+            } catch {
+                $r.Defender += "WARNING: Could not re-enable realtime."
+            }
+        } else {
+            $r.Defender += "SUCCESS: Realtime protection is ON."
+        }
+        $r.Defender += "SUCCESS: Defender service running."
+        Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mDefender running$ESC[0m"
+    } else {
+        $r.Defender += "FAILURE: Defender not running."
+        Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120mDefender not running$ESC[0m"
+    }
+} catch {
+    $r.Defender += "WARNING: Could not query Defender."
+    Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120mCould not query Defender$ESC[0m"
+}
+
+Write-Step "Checking Defender exclusions..."
+try {
+    $pf = Get-MpPreference -EA Stop
+    $ex = $pf.ExclusionPath
+    if ($ex) {
+        $r.Exclusions += "FAILURE: Exclusions found:"
+        foreach ($e in $ex) {
+            $r.Exclusions += "  $e"
+            Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120m$e$ESC[0m"
+        }
+    } else {
+        $r.Exclusions += "SUCCESS: No exclusions set."
+        Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mNo exclusions$ESC[0m"
+    }
+} catch {
+    $r.Exclusions += "WARNING: Could not check exclusions."
+    Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120mCould not check$ESC[0m"
+}
+
+Write-Step "Scanning for active threats..."
+try {
+    $th = Get-MpThreat -EA Stop | ? { $_.Status -eq "Active" }
+    if ($th) {
+        foreach ($t in $th) {
+            $r.Threats += "FAILURE: $($t.ThreatName) | $($t.Resources)"
+            Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120m$($t.ThreatName)$ESC[0m"
+        }
+    } else {
+        $r.Threats += "SUCCESS: No active threats."
+        Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mNo active threats$ESC[0m"
+    }
+} catch {
+    $r.Threats += "WARNING: Threat scan failed."
+    Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120mScan failed$ESC[0m"
+}
+
+
+Write-Step "Verifying PowerShell binary..."
+try {
+    $ps = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+    $sg = Get-AuthenticodeSignature -FilePath $ps -EA Stop
+    if ($sg.Status -eq 'Valid' -and $sg.SignerCertificate.Subject -like '*Microsoft*') {
+        $r.PSSig += "SUCCESS: PowerShell binary signed and valid."
+        Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mPowerShell signed$ESC[0m"
+    } else {
+        $r.PSSig += "FAILURE: PowerShell binary invalid."
+        Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120mSignature invalid$ESC[0m"
+    }
+} catch {
+    $r.PSSig += "WARNING: Could not verify PowerShell."
+    Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120mCould not verify$ESC[0m"
+}
+
+
+Write-Step "Checking Defender registry keys..."
+$regKeys = @(
+    "HKLM:\SOFTWARE\Microsoft\Windows Defender\Threats",
+    "HKLM:\SOFTWARE\Microsoft\Windows Defender\Threats\ThreatIDDefaultAction",
+    "HKLM:\SOFTWARE\Microsoft\Windows Defender\Threats\ThreatSeverityDefaultAction",
+    "HKLM:\SOFTWARE\Microsoft\Windows Defender\Threats\ThreatTypeDefaultAction",
+    "HKLM:\SOFTWARE\Microsoft\Windows Defender\Exclusions",
+    "HKLM:\SOFTWARE\Microsoft\Windows Defender\Exclusions\Extensions",
+    "HKLM:\SOFTWARE\Microsoft\Windows Defender\Exclusions\IpAddresses",
+    "HKLM:\SOFTWARE\Microsoft\Windows Defender\Exclusions\Paths",
+    "HKLM:\SOFTWARE\Microsoft\Windows Defender\Exclusions\Processes",
+    "HKLM:\SOFTWARE\Microsoft\Windows Defender\Exclusions\TemporaryPaths"
+)
+
+foreach ($rk in $regKeys) {
+    $kn = ($rk -split '\\')[-1]
+    if (-not (Test-Path $rk)) {
+        $r.Registry += "SUCCESS: $kn -> not found"
+        Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180m$kn$ESC[0m $ESC[38;2;100;100;100m-> clean$ESC[0m"
+        continue
+    }
+    try {
+        $pr = Get-ItemProperty $rk -EA Stop
+        $vl = $pr.PSObject.Properties | ? { $_.Name -notlike "PS*" -and $_.Name -ne "(default)" }
+        if ($vl.Count -eq 0) {
+            $r.Registry += "SUCCESS: $kn -> empty"
+            Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180m$kn$ESC[0m $ESC[38;2;100;100;100m-> clean$ESC[0m"
+        } else {
+            $vt = ($vl | % { "$($_.Name)=$($_.Value)" }) -join ", "
+            $r.Registry += "FAILURE: $kn -> $vt"
+            Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120m$kn$ESC[0m $ESC[38;2;180;100;100m-> $vt$ESC[0m"
+        }
+    } catch {
+        $r.Registry += "WARNING: $kn -> could not read"
+        Write-Host "  $ESC[38;2;255;200;0m⚠$ESC[0m $ESC[38;2;255;220;100m$kn$ESC[0m $ESC[38;2;180;150;100m-> unreadable$ESC[0m"
+    }
+}
+
+
+Write-Step "Checking localhost ports..."
+$ports = @(@{h="127.0.0.1";p=8080}, @{h="localhost";p=8080})
+
+foreach ($tg in $ports) {
+    $ha = $tg.h; $pn = $tg.p; $lb = "${ha}:${pn}"
+    try {
+        $tc = New-Object System.Net.Sockets.TcpClient
+        $cn = $tc.BeginConnect($ha, $pn, $null, $null)
+        $wt = $cn.AsyncWaitHandle.WaitOne(2000, $false)
+        if ($wt -and $tc.Connected) {
+            $r.Ports += "FAILURE: $lb -> OPEN"
+            Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120m$lb$ESC[0m $ESC[38;2;180;100;100m-> OPEN$ESC[0m"
+        } else {
+            $r.Ports += "SUCCESS: $lb -> closed"
+            Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180m$lb$ESC[0m $ESC[38;2;100;100;100m-> closed$ESC[0m"
+        }
+        $tc.Close()
+    } catch {
+        $r.Ports += "SUCCESS: $lb -> closed"
+        Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180m$lb$ESC[0m $ESC[38;2;100;100;100m-> closed$ESC[0m"
+    }
+}
+
+
+Write-Host ""
+Write-Section "Files + Modules" $r.Modules
+Write-Section "OS Check" $r.OS
+Write-Section "Memory Integrity" $r.MemInt
+Write-Section "Windows Defender" $r.Defender
+Write-Section "Exclusions" $r.Exclusions
+Write-Section "Threats" $r.Threats
+Write-Section "Binary Signature" $r.PSSig
+Write-Section "Registry Keys" $r.Registry
+Write-Section "Port Checks" $r.Ports
+
+$all = @()
+foreach ($k in $r.Keys) { $all += $r[$k] }
+$all = $all | ? { $_ -match '^(SUCCESS|FAILURE|WARNING)' }
+$total = $all.Count
+$suc = ($all | ? { $_ -match '^SUCCESS' }).Count
+$rate = if ($total -gt 0) { [math]::Round(($suc / $total) * 100, 0) } else { 0 }
+
+Write-Host ""
+if ($rate -eq 100) {
+    Write-Host "  $ESC[38;2;0;200;80m╔════════════════════════════════════════════════════════════╗$ESC[0m"
+    Write-Host "  $ESC[38;2;0;200;80m║$ESC[0m  $ESC[38;2;0;255;100mSuccess Rate:$ESC[0m  $ESC[38;2;0;255;150m$rate%$ESC[0m  $ESC[38;2;100;100;100m($suc / $total)$ESC[0m"
+    Write-Host "  $ESC[38;2;0;200;80m╚════════════════════════════════════════════════════════════╝$ESC[0m"
+} else {
+    Write-Host "  $ESC[38;2;255;60;60m╔════════════════════════════════════════════════════════════╗$ESC[0m"
+    Write-Host "  $ESC[38;2;255;60;60m║$ESC[0m  $ESC[38;2;255;100;100mSuccess Rate:$ESC[0m  $ESC[38;2;255;150;150m$rate%$ESC[0m  $ESC[38;2;100;100;100m($suc / $total)$ESC[0m"
+    Write-Host "  $ESC[38;2;255;60;60m╚════════════════════════════════════════════════════════════╝$ESC[0m"
+}
+
+Wait-ForEnter
+Clear-Host
+
+
+Write-Host ""
+Write-Host "  $ESC[38;2;255;200;0m╔════════════════════════════════════════════════════════════╗$ESC[0m"
+Write-Host "  $ESC[38;2;255;200;0m║$ESC[0m  $ESC[38;2;255;255;255mStep 2 of 2:$ESC[0m  $ESC[38;2;255;220;50mProcess Explorer$ESC[0m"
+Write-Host "  $ESC[38;2;255;200;0m║$ESC[0m  $ESC[38;2;180;180;180mWait for it to open, scroll to bottom, then close.$ESC[0m"
+Write-Host "  $ESC[38;2;255;200;0m╚════════════════════════════════════════════════════════════╝$ESC[0m"
+Write-Host ""
+Show-LoadingBar "Initializing"
+
+$pn = @("procexp32","procexp64","procexp64a")
+$rp = Get-Process -EA SilentlyContinue | ? { $pn -contains $_.ProcessName.ToLower() }
+
+if ($rp) {
+    Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mFound running Process Explorer$ESC[0m"
+    $rp | % {
+        try {
+            $_ | Stop-Process -Force -EA Stop
+            Write-Host "    $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;140;140;140mKilled PID $($_.Id)$ESC[0m"
+        } catch {
+            Write-Host "    $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120mCouldn't kill PID $($_.Id)$ESC[0m"
+        }
+    }
+    Start-Sleep -Seconds 2
+    Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mAll terminated$ESC[0m"
+} else {
+    Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mNo running Process Explorer found$ESC[0m"
+}
+
+$bf = "C:\Process Explorer"
+$ef = Join-Path $bf "ProcessExplorer"
+$zu = "https://download.sysinternals.com/files/ProcessExplorer.zip"
+$zp = Join-Path $bf "ProcessExplorer.zip"
+
+if (Test-Path $bf) {
+    Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mCleaned up existing folder$ESC[0m"
+    Get-ChildItem -Path $bf -Force -Recurse | % {
+        try {
+            if ($_.Attributes -band [System.IO.FileAttributes]::ReadOnly) {
+                $_.Attributes = $_.Attributes -bxor [System.IO.FileAttributes]::ReadOnly
+            }
+            if ($_.Attributes -band [System.IO.FileAttributes]::Hidden) {
+                $_.Attributes = $_.Attributes -bxor [System.IO.FileAttributes]::Hidden
+            }
+            Remove-Item -LiteralPath $_.FullName -Recurse -Force -EA Stop
+        } catch {
+            Write-Host "  $ESC[38;2;255;200;0m⚠$ESC[0m $ESC[38;2;180;150;100mCouldn't remove: $($_.FullName)$ESC[0m"
+        }
+    }
+} else {
+    try { New-Item -ItemType Directory -Path $bf -EA Stop | Out-Null; Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mCreated folder$ESC[0m" } catch { Write-Host "  $ESC[38;2;255;200;0m⚠$ESC[0m $ESC[38;2;180;150;100mFolder may already exist$ESC[0m" }
+}
+
+try { Invoke-WebRequest -Uri $zu -OutFile $zp -UseBasicParsing -EA Stop; Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mDownloaded$ESC[0m" } catch { Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120mDownload failed$ESC[0m" }
+try { Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory($zp, $ef); Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mExtracted$ESC[0m" } catch { Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mAlready exists$ESC[0m" }
+Remove-Item $zp -Force -EA SilentlyContinue
+
+$ru = "https://pastebin.com/raw/gse8NxwU"
+$rf = Join-Path $bf "procexp_config.reg"
+
+try { Invoke-WebRequest -Uri $ru -OutFile $rf -UseBasicParsing -EA Stop; Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mGot reg config$ESC[0m" } catch { Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120mReg download failed$ESC[0m" }
+
+try {
+    $cp = "$env:SystemRoot\System32\cmd.exe"
+    if (-Not (Test-Path $cp)) { throw "no cmd.exe" }
+    & $cp /c "reg import `"$rf`""
+    if ($LASTEXITCODE -eq 0) { Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mReg imported$ESC[0m" } else { Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120mReg import failed: $LASTEXITCODE$ESC[0m" }
+} catch { Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120mReg import error$ESC[0m" }
+
+$pe = Get-ChildItem -Path $ef -Filter "procexp64.exe" -Recurse | Select-Object -First 1
+
+if ($pe) {
+    Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mLaunching Process Explorer$ESC[0m"
+    $proc = Start-Process -FilePath $pe.FullName -PassThru
+    Start-Sleep -Seconds 1
+
+    $ws = New-Object -ComObject wscript.shell
+    Start-Sleep -Milliseconds 500
+    $null = $ws.AppActivate($proc.Id)
+    Start-Sleep -Milliseconds 500
+    $ws.SendKeys('% ')
+    Start-Sleep -Milliseconds 200
+    $ws.SendKeys('x')
+    Start-Sleep -Milliseconds 500
+
+    Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mWindow maximized$ESC[0m"
+    Write-Host "  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180mReady$ESC[0m"
+    Write-Host ""
+    $proc.WaitForExit()
+    Write-Host ""
+    Write-Host "  $ESC[38;2;0;200;80m╔════════════════════════════════════════════════════════════╗$ESC[0m"
+    Write-Host "  $ESC[38;2;0;200;80m║$ESC[0m  $ESC[38;2;0;255;100mSuccess Rate:$ESC[0m  $ESC[38;2;0;255;150m100%$ESC[0m  $ESC[38;2;100;100;100m(1 / 1)$ESC[0m"
+    Write-Host "  $ESC[38;2;0;200;80m╚════════════════════════════════════════════════════════════╝$ESC[0m"
+} else {
+    Write-Host "  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;120;120mprocexp64.exe not found$ESC[0m"
+    Write-Host ""
+    Write-Host "  $ESC[38;2;255;60;60m╔════════════════════════════════════════════════════════════╗$ESC[0m"
+    Write-Host "  $ESC[38;2;255;60;60m║$ESC[0m  $ESC[38;2;255;100;100mSuccess Rate:$ESC[0m  $ESC[38;2;255;150;150m0%$ESC[0m  $ESC[38;2;100;100;100m(0 / 1)$ESC[0m"
+    Write-Host "  $ESC[38;2;255;60;60m╚════════════════════════════════════════════════════════════╝$ESC[0m"
+}
+
+Wait-ForEnter
+exit
