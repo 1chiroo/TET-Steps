@@ -35,9 +35,10 @@ if (-not $IsAdmin) {
 $ESC = [char]27
 
 function Wait-ForEnter {
+    param([string]$NextText = "continue")
     Start-Sleep -Seconds 1
     Write-Host ""
-    Write-Host "  $ESC[38;2;100;100;100mPress any key to exit...$ESC[0m" -NoNewline
+    Write-Host "  $ESC[38;2;100;100;100mPress any key to $NextText...$ESC[0m" -NoNewline
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
     Write-Host ""
 }
@@ -393,7 +394,7 @@ if ($rate -eq 100) {
     Write-Host "  $ESC[38;2;255;60;60m╚════════════════════════════════════════════════════════════╝$ESC[0m"
 }
 
-Wait-ForEnter
+Wait-ForEnter "continue to Step 2"
 Clear-Host
 
 
@@ -496,5 +497,5 @@ if ($pe) {
     Write-Host "  $ESC[38;2;255;60;60m╚════════════════════════════════════════════════════════════╝$ESC[0m"
 }
 
-Wait-ForEnter
+Wait-ForEnter "exit"
 exit
