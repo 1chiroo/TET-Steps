@@ -54,26 +54,6 @@ function Show-LoadingBar {
     Write-Host ""
 }
 
-function Write-Section {
-    param([string]$Title, [string[]]$Lines)
-    Write-Host ""
-    Write-Host "  $ESC[38;2;0;180;220m╔══════════════════════════════════════════════════╗$ESC[0m"
-    Write-Host "  $ESC[38;2;0;180;220m║  $ESC[38;2;255;255;255m$Title$ESC[0m"
-    Write-Host "  $ESC[38;2;0;180;220m╠══════════════════════════════════════════════════╣$ESC[0m"
-    if ($Lines.Count -eq 0) {
-        Write-Host "  $ESC[38;2;0;180;220m║  $ESC[38;2;100;100;100m(no results)$ESC[0m"
-        Write-Host "  $ESC[38;2;0;180;220m╚══════════════════════════════════════════════════╝$ESC[0m"
-        return
-    }
-    foreach ($line in $Lines) {
-        if ($line -match "^SUCCESS")     { Write-Host "  $ESC[38;2;0;180;220m║  $ESC[38;2;0;220;80m✓$ESC[0m $ESC[38;2;180;180;180m$($line -replace '^SUCCESS: ','')$ESC[0m" }
-        elseif ($line -match "^FAILURE") { Write-Host "  $ESC[38;2;0;180;220m║  $ESC[38;2;255;60;60m✗$ESC[0m $ESC[38;2;255;100;100m$($line -replace '^FAILURE: ','')$ESC[0m" }
-        elseif ($line -match "^WARNING") { Write-Host "  $ESC[38;2;0;180;220m║  $ESC[38;2;255;200;0m⚠$ESC[0m $ESC[38;2;255;200;100m$($line -replace '^WARNING: ','')$ESC[0m" }
-        else                             { Write-Host "  $ESC[38;2;0;180;220m║  $ESC[38;2;180;180;180m$line$ESC[0m" }
-    }
-    Write-Host "  $ESC[38;2;0;180;220m╚══════════════════════════════════════════════════╝$ESC[0m"
-}
-
 function Write-Step {
     param([string]$t)
     Write-Host ""
@@ -394,17 +374,6 @@ foreach ($tg in $ports) {
     }
 }
 
-
-Write-Host ""
-Write-Section "Files + Modules" $r.Modules
-Write-Section "OS Check" $r.OS
-Write-Section "Memory Integrity" $r.MemInt
-Write-Section "Windows Defender" $r.Defender
-Write-Section "Exclusions" $r.Exclusions
-Write-Section "Threats" $r.Threats
-Write-Section "Binary Signature" $r.PSSig
-Write-Section "Registry Keys" $r.Registry
-Write-Section "Port Checks" $r.Ports
 
 $all = @()
 foreach ($k in $r.Keys) { $all += $r[$k] }
