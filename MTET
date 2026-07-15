@@ -63,17 +63,17 @@ function Write-Step {
 
 Clear-Host
 
-[Console]::WriteLine(" $ESC[0;37;40m $ESC[0;31;40m▄▄▀▀▀████$ESC[91;1;41m░░▒▓$ESC[91;1;40m▄$ESC[0;37;40m     $ESC[0;31;40m▄▄▄▄▄▄▄$ESC[0;37;40m         $ESC[0;31;40m▄▄▀▀▀████$ESC[91;1;41m░░▒▓$ESC[91;1;40m▄$ESC[0;37;40m $ESC[0m")
-[Console]::WriteLine(" $ESC[0;31;40m▀$ESC[0;37;40m       $ESC[0;97;1;40m▄$ESC[0;37;40m $ESC[0;31;40m███$ESC[91;1;41m▒▓$ESC[91;1;40m▌$ESC[0;37;40m   $ESC[0;31;40m▄█▀▀▀█$ESC[91;1;41m░░▒▓▓$ESC[91;1;40m▄$ESC[0;37;40m     $ESC[0;31;40m▀$ESC[0;37;40m       $ESC[0;97;1;40m▄$ESC[0;37;40m $ESC[0;31;40m███$ESC[91;1;41m▒▓$ESC[91;1;40m▌$ESC[0m")
-[Console]::WriteLine(" $ESC[0;37;40m       $ESC[0;97;1;40m▐$ESC[0;97;1;47m▒▓$ESC[0;37;40m $ESC[0;31;40m▀██$ESC[91;1;41m▒▓$ESC[0;37;40m $ESC[0;31;40m▀▄$ESC[0;37;40m  $ESC[0;97;1;40m▄$ESC[0;37;40m   $ESC[0;31;40m▀$ESC[0;31;41m $ESC[91;1;41m░▒▓▓$ESC[91;1;40m▄$ESC[0;37;40m          $ESC[0;97;1;40m▐$ESC[0;97;1;47m▒▓$ESC[0;37;40m $ESC[0;31;40m▀██$ESC[91;1;41m▒▓$ESC[0m")
-[Console]::WriteLine(" $ESC[0;37;40m       ▐$ESC[0;97;1;47m░░$ESC[0;37;40m   $ESC[91;1;41m░ $ESC[0;37;40m     $ESC[0;97;1;40m▐$ESC[0;97;1;47m▒▓$ESC[0;37;40m    $ESC[0;31;40m▀█$ESC[91;1;41m░▒▓$ESC[91;1;40m▌$ESC[0;37;40m         ▐$ESC[0;97;1;47m░░$ESC[0;37;40m   $ESC[91;1;41m░ $ESC[0;37;40m $ESC[0m")
-[Console]::WriteLine(" $ESC[0;37;40m       ▐$ESC[0;90;1;47m░░$ESC[0;37;40m  $ESC[0;31;40m▀$ESC[0;37;40m       ▐$ESC[0;97;1;47m░░$ESC[0;37;40m  $ESC[91;1;40m▄$ESC[0;37;40m   $ESC[0;31;40m▀█$ESC[91;1;41m░░$ESC[0;37;40m         ▐$ESC[0;90;1;47m░░$ESC[0;37;40m  $ESC[0;31;40m▀$ESC[0;37;40m   $ESC[0m")
-[Console]::WriteLine(" $ESC[0;37;40m        $ESC[0;90;1;47m▒$ESC[0;37;40m▌          ▐$ESC[0;90;1;47m░░$ESC[0;37;40m $ESC[0;31;40m▐$ESC[91;1;41m▒$ESC[91;1;40m▌$ESC[0;37;40m   $ESC[0;31;40m▐█$ESC[91;1;41m░$ESC[91;1;40m▌$ESC[0;37;40m         $ESC[0;90;1;47m▒$ESC[0;37;40m▌      $ESC[0m")
-[Console]::WriteLine(" $ESC[0;37;40m        $ESC[0;90;1;47m▓$ESC[0;37;40m▌           $ESC[0;90;1;47m▒$ESC[0;37;40m▌  $ESC[0;31;40m▀$ESC[0;37;40m     $ESC[0;31;41m $ESC[0;31;40m█$ESC[0;37;40m          $ESC[0;90;1;47m▓$ESC[0;37;40m▌      $ESC[0m")
-[Console]::WriteLine(" $ESC[0;37;40m        $ESC[0;90;1;40m█$ESC[0;37;40m            $ESC[0;90;1;47m▓$ESC[0;37;40m▌        $ESC[0;31;40m▐▌$ESC[0;37;40m          $ESC[0;90;1;40m█$ESC[0;37;40m       $ESC[0m")
-[Console]::WriteLine(" $ESC[0;37;40m        $ESC[0;90;1;40m▐$ESC[0;37;40m            $ESC[0;90;1;40m█$ESC[0;37;40m         $ESC[0;31;40m█$ESC[0;37;40m           $ESC[0;90;1;40m▐$ESC[0;37;40m       $ESC[0m")
-[Console]::WriteLine(" $ESC[0;37;40m                     $ESC[0;90;1;40m▐$ESC[0;37;40m        $ESC[0;31;40m▄▀$ESC[0;37;40m                   $ESC[0m")
-[Console]::WriteLine(" $ESC[0;37;40m                             $ESC[0;31;40m▀$ESC[0;37;40m                     $ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m $ESC[0;31;40m▄▄▀▀▀████$ESC[0;91;1;41m░░▒▓$ESC[0;91;1;40m▄$ESC[0;37;40m   $ESC[0;31;40m▄▄▀▀▀████$ESC[0;91;1;41m░░▒▓$ESC[0;91;1;40m▄$ESC[0;37;40m   $ESC[0;31;40m▄▄▀▀▀████$ESC[0;91;1;41m░░▒▓$ESC[0;91;1;40m▄$ESC[0;37;40m $ESC[0m")
+[Console]::WriteLine(" $ESC[0;31;40m▀$ESC[0;37;40m       $ESC[0;97;1;40m▄$ESC[0;37;40m $ESC[0;31;40m███$ESC[0;91;1;41m▒▓$ESC[0;91;1;40m▌$ESC[0;37;40m $ESC[0;31;40m▀$ESC[0;37;40m  $ESC[0;97;1;40m▄$ESC[0;37;40m     $ESC[0;31;40m▀███$ESC[0;91;1;41m▒▓$ESC[0;91;1;40m▌$ESC[0;37;40m $ESC[0;31;40m▀$ESC[0;37;40m       $ESC[0;97;1;40m▄$ESC[0;37;40m $ESC[0;31;40m███$ESC[0;91;1;41m▒▓$ESC[0;91;1;40m▌$ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m       $ESC[0;97;1;40m▐$ESC[0;97;1;47m▒▓$ESC[0;37;40m $ESC[0;31;40m▀██$ESC[0;91;1;41m▒▓$ESC[0;37;40m   $ESC[0;97;1;40m▐$ESC[0;97;1;47m▒▓$ESC[0;37;40m      $ESC[0;31;40m▀██$ESC[0;91;1;41m▒▓$ESC[0;37;40m        $ESC[0;97;1;40m▐$ESC[0;97;1;47m▒▓$ESC[0;37;40m $ESC[0;31;40m▀██$ESC[0;91;1;41m▒▓$ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m       ▐$ESC[0;97;1;47m░░$ESC[0;37;40m   $ESC[0;91;1;41m░ $ESC[0;37;40m    ▐$ESC[0;97;1;47m░░$ESC[0;37;40m        $ESC[0;91;1;41m░ $ESC[0;37;40m         ▐$ESC[0;97;1;47m░░$ESC[0;37;40m   $ESC[0;91;1;41m░ $ESC[0;37;40m $ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m       ▐$ESC[0;90;1;47m░░$ESC[0;37;40m  $ESC[0;31;40m▀$ESC[0;37;40m      ▐$ESC[0;90;1;47m░░$ESC[0;37;40m  $ESC[0;91;1;40m▄$ESC[0;37;40m    $ESC[0;31;40m▀$ESC[0;37;40m           ▐$ESC[0;90;1;47m░░$ESC[0;37;40m  $ESC[0;31;40m▀$ESC[0;37;40m   $ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m        $ESC[0;90;1;47m▒$ESC[0;37;40m▌          $ESC[0;90;1;47m▒$ESC[0;37;40m▌ $ESC[0;31;40m▐$ESC[0;91;1;41m▒$ESC[0;91;1;40m▌$ESC[0;37;40m                $ESC[0;90;1;47m▒$ESC[0;37;40m▌      $ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m        $ESC[0;90;1;47m▓$ESC[0;37;40m▌          $ESC[0;90;1;47m▓$ESC[0;37;40m▌  $ESC[0;31;40m▀$ESC[0;37;40m    $ESC[0;91;1;40m▀▄$ESC[0;37;40m           $ESC[0;90;1;47m▓$ESC[0;37;40m▌      $ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m        $ESC[0;90;1;40m█$ESC[0;37;40m           $ESC[0;90;1;40m█$ESC[0;37;40m         $ESC[0;91;1;41m▒▓$ESC[0;91;1;40m▄$ESC[0;37;40m         $ESC[0;90;1;40m█$ESC[0;37;40m       $ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m        $ESC[0;90;1;40m▐$ESC[0;37;40m           $ESC[0;90;1;40m▐$ESC[0;37;40m       $ESC[0;31;40m▄█$ESC[0;91;1;41m░▒▓$ESC[0;37;40m         $ESC[0;90;1;40m▐$ESC[0;37;40m       $ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m                  $ESC[0;31;40m▀▄▄$ESC[0;37;40m   $ESC[0;31;40m▄▄▄█$ESC[0;91;1;41m░$ESC[0;31;40m█$ESC[0;91;1;41m░░$ESC[0;31;40m▀$ESC[0;37;40m                 $ESC[0m")
+[Console]::WriteLine(" $ESC[0;37;40m                     $ESC[0;31;40m▀▀▀▀▀▀▀▀▀$ESC[0;37;40m                    $ESC[0m")
 Write-Host ""
 Write-Host "  $ESC[38;2;100;100;100mMade by$ESC[0m $ESC[38;2;200;200;200mIchiro$ESC[0m $ESC[38;2;0;180;220m.aw_$ESC[0m"
 
